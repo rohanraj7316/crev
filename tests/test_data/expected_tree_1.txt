@@ -1,9 +1,0 @@
-├── cmd
-│   ├── ai-code-review
-│   │   └── main.go
-├── go.mod
-├── internal
-│   ├── files
-│   │   └── filtering.go
-│   ├── formatting
-│   │   └── format.go

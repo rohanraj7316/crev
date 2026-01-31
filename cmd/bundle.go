@@ -3,79 +3,11 @@ package cmd
 
 import (
 	"log"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/vossenwout/crev/internal/files"
-	"github.com/vossenwout/crev/internal/formatting"
+	"github.com/vossenwout/crev/internal/bundle"
 )
-
-var standardPrefixesToIgnore = []string{
-	// ignore .git, .idea, .vscode, etc.
-	".",
-	// ignore crev specific files
-	"crev",
-	// ignore go.mod, go.sum, etc.
-	"go",
-	"license",
-	// readme
-	"readme",
-	"README",
-	// poetry
-	"pyproject.toml",
-	"poetry.lock",
-	"venv",
-	// output files
-	"build",
-	"dist",
-	"out",
-	"target",
-	"bin",
-	// javascript
-	"node_modules",
-	"coverage",
-	"public",
-	"static",
-	"Thumbs.db",
-	"package",
-	"yarn.lock",
-	"package",
-	"tsconfig",
-	// next.js
-	"next.config",
-	"next-env",
-	// python
-	"__pycache__",
-	"logs",
-	// java
-	"gradle",
-	// c++
-	"CMakeLists",
-	// ruby
-	"vendor",
-	"Gemfile",
-	// php
-	"composer",
-	// tailwind
-	"tailwind",
-	"postcss",
-}
-
-var standardExtensionsToIgnore = []string{
-	".jpeg",
-	".jpg",
-	".png",
-	".gif",
-	".pdf",
-	".svg",
-	".ico",
-	".woff",
-	".woff2",
-	".eot",
-	".ttf",
-	".otf",
-}
 
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
@@ -94,20 +26,6 @@ crev bundle --from-branch=main --to-branch=main
 `,
 	Args: cobra.NoArgs,
 	Run: func(_ *cobra.Command, _ []string) {
-		// start timer
-		start := time.Now()
-
-		// get all file paths from the root directory
-		rootDir := "."
-
-		prefixesToIgnore := viper.GetStringSlice("ignore-pre")
-		prefixesToIgnore = append(prefixesToIgnore, standardPrefixesToIgnore...)
-
-		extensionsToIgnore := viper.GetStringSlice("ignore-ext")
-		extensionsToIgnore = append(extensionsToIgnore, standardExtensionsToIgnore...)
-
-		extensionsToInclude := viper.GetStringSlice("include-ext")
-
 		fromBranch := viper.GetStringSlice("from-branch")
 		if len(fromBranch) == 0 {
 			log.Fatal("from-branch must be specified")
@@ -118,48 +36,19 @@ crev bundle --from-branch=main --to-branch=main
 			log.Fatal("to-branch must be specified")
 		}
 
-		filePaths, err := files.GetAllFilePaths(rootDir, prefixesToIgnore,
-			extensionsToInclude, extensionsToIgnore)
-		if err != nil {
-			log.Fatal(err)
-			return
+		opts := bundle.Options{
+			RootDir:             ".",
+			PrefixesToIgnore:    viper.GetStringSlice("ignore-pre"),
+			ExtensionsToIgnore:  viper.GetStringSlice("ignore-ext"),
+			ExtensionsToInclude: viper.GetStringSlice("include-ext"),
+			FromBranch:          fromBranch[0],
+			ToBranch:            toBranch[0],
+			OutputFile:          "crev-project.txt",
 		}
 
-		// generate the project tree
-		projectTree := formatting.GeneratePathTree(filePaths)
-
-		maxConcurrency := 100
-		// get the content of all files
-		fileContentMap, err := files.GetContentMapOfFiles(filePaths, maxConcurrency)
-		if err != nil {
+		if err := bundle.GenerateAndLog(opts); err != nil {
 			log.Fatal(err)
 		}
-
-		gitDiffMap, err := files.GetGitDiffOfContentMapOfFiles(fromBranch[0], toBranch[0], maxConcurrency)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// create the project string
-		projectString := formatting.CreateProjectString(projectTree, fileContentMap, gitDiffMap)
-
-		outputFile := "crev-project.txt"
-		// save the project string to a file
-		err = files.SaveStringToFile(projectString, outputFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// log success
-		log.Println("Project overview succesfully saved to: " + outputFile)
-
-		// estimate number of tokens
-		log.Printf("Estimated token count: %d - %d tokens",
-			len(projectString)/4, len(projectString)/3)
-
-		elapsed := time.Since(start)
-		log.Printf("Execution time: %s", elapsed)
-
 	},
 }
 

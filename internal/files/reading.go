@@ -2,6 +2,7 @@
 package files
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -119,16 +120,22 @@ func GetContentMapOfFiles(filePaths []string, maxConcurrency int) (map[string]st
 	return resultMap, nil
 }
 
-func GetGitDiffOfContentMapOfFiles(fromBranch, toBranch string, maxConcurrency int) (map[string]string, error) {
+func GetGitDiffOfContentMapOfFiles(workDir, fromBranch, toBranch string, maxConcurrency int) (map[string]string, error) {
 	// This function returns a map of file names to their git diff output between two branches.
 	// The key is the file path, the value is the diff as a string.
 	// If there is no diff for a file, it will not be included in the map.
+	// workDir specifies the directory where git commands should be executed.
 
 	// Prepare the git diff command to get the diff for all files between the two branches.
-
 	cmd := exec.Command("git", "diff", toBranch, fromBranch, "--name-only")
+	if workDir != "" {
+		cmd.Dir = workDir
+	}
 	output, err := cmd.Output()
 	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return nil, fmt.Errorf("git diff failed: %s", string(exitErr.Stderr))
+		}
 		return nil, err
 	}
 
@@ -156,6 +163,9 @@ func GetGitDiffOfContentMapOfFiles(fromBranch, toBranch string, maxConcurrency i
 			defer func() { <-semaphore }()
 			// Get the diff for this file.
 			diffCmd := exec.Command("git", "diff", toBranch, fromBranch, "--", f)
+			if workDir != "" {
+				diffCmd.Dir = workDir
+			}
 			diffOut, err := diffCmd.Output()
 			if err != nil {
 				diffChan <- diffResult{file: f, diff: "", err: err}

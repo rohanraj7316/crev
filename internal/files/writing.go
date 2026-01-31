@@ -6,6 +6,11 @@ import (
 	"os"
 )
 
+// EnsureDir creates a directory if it doesn't exist.
+func EnsureDir(path string) error {
+	return os.MkdirAll(path, 0755)
+}
+
 // Saves a string to a file.
 func SaveStringToFile(content string, path string) (err error) {
 	f, err := os.Create(path)
