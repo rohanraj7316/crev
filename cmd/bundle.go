@@ -90,6 +90,7 @@ Example usage:
 crev bundle
 crev bundle --ignore-pre=tests,readme --ignore-ext=.txt 
 crev bundle --ignore-pre=tests,readme --include-ext=.go,.py,.js
+crev bundle --from-branch=main --to-branch=main
 `,
 	Args: cobra.NoArgs,
 	Run: func(_ *cobra.Command, _ []string) {
@@ -106,6 +107,16 @@ crev bundle --ignore-pre=tests,readme --include-ext=.go,.py,.js
 		extensionsToIgnore = append(extensionsToIgnore, standardExtensionsToIgnore...)
 
 		extensionsToInclude := viper.GetStringSlice("include-ext")
+
+		fromBranch := viper.GetStringSlice("from-branch")
+		if len(fromBranch) == 0 {
+			log.Fatal("from-branch must be specified")
+		}
+
+		toBranch := viper.GetStringSlice("to-branch")
+		if len(toBranch) == 0 {
+			log.Fatal("to-branch must be specified")
+		}
 
 		filePaths, err := files.GetAllFilePaths(rootDir, prefixesToIgnore,
 			extensionsToInclude, extensionsToIgnore)
@@ -124,8 +135,13 @@ crev bundle --ignore-pre=tests,readme --include-ext=.go,.py,.js
 			log.Fatal(err)
 		}
 
+		gitDiffMap, err := files.GetGitDiffOfContentMapOfFiles(fromBranch[0], toBranch[0], maxConcurrency)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		// create the project string
-		projectString := formatting.CreateProjectString(projectTree, fileContentMap)
+		projectString := formatting.CreateProjectString(projectTree, fileContentMap, gitDiffMap)
 
 		outputFile := "crev-project.txt"
 		// save the project string to a file
@@ -152,15 +168,30 @@ func init() {
 	generateCmd.Flags().StringSlice("ignore-pre", []string{}, "Comma-separated prefixes of file and dir names to ignore. Ex tests,readme")
 	generateCmd.Flags().StringSlice("ignore-ext", []string{}, "Comma-separated file extensions to ignore. Ex .txt,.md")
 	generateCmd.Flags().StringSlice("include-ext", []string{}, "Comma-separated file extensions to include. Ex .go,.py,.js")
+	generateCmd.Flags().StringSlice("from-branch", []string{}, "Branch to compare from. Ex main")
+	generateCmd.Flags().StringSlice("to-branch", []string{}, "Branch to compare to. Ex main")
+
 	err := viper.BindPFlag("ignore-pre", generateCmd.Flags().Lookup("ignore-pre"))
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	err = viper.BindPFlag("ignore-ext", generateCmd.Flags().Lookup("ignore-ext"))
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	err = viper.BindPFlag("include-ext", generateCmd.Flags().Lookup("include-ext"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = viper.BindPFlag("from-branch", generateCmd.Flags().Lookup("from-branch"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = viper.BindPFlag("to-branch", generateCmd.Flags().Lookup("to-branch"))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -54,7 +54,7 @@ func GeneratePathTree(paths []string) string {
 }
 
 // Creates a string representation of the project.
-func CreateProjectString(projectTree string, fileContentMap map[string]string) string {
+func CreateProjectString(projectTree string, fileContentMap, gitDiffMap map[string]string) string {
 	var projectString strings.Builder
 	projectString.WriteString("Project Directory Structure:" + "\n")
 	projectString.WriteString(projectTree + "\n\n")
@@ -71,7 +71,14 @@ func CreateProjectString(projectTree string, fileContentMap map[string]string) s
 		projectString.WriteString("File: " + "\n")
 		projectString.WriteString(fileName + "\n")
 		projectString.WriteString("Content: " + "\n")
-		projectString.WriteString(fileContent + "\n\n")
+		projectString.WriteString(fileContent + "\n")
+
+		if gitDiff, ok := gitDiffMap[fileName]; ok {
+			projectString.WriteString("Git Diff: " + "\n")
+			projectString.WriteString(gitDiff + "\n")
+		}
+
+		projectString.WriteString("\n")
 	}
 	return projectString.String()
 }
