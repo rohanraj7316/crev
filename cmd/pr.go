@@ -95,8 +95,8 @@ Example usage:
 
 		opts := bundle.Options{
 			RootDir:    tempDir,
-			FromBranch: cloneResult.DestBranch,   // Compare from destination (target) branch
-			ToBranch:   cloneResult.SourceBranch, // Compare to source (PR) branch
+			FromBranch: cloneResult.SourceBranch, // Compare from destination (target) branch
+			ToBranch:   cloneResult.DestBranch,   // Compare to source (PR) branch
 			OutputFile: tempOutputFile,
 		}
 
