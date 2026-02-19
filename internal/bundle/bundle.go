@@ -93,11 +93,11 @@ type Options struct {
 
 // Result contains the result of a bundle generation
 type Result struct {
-	OutputFile     string
-	ProjectString  string
-	TokenEstimate  string
-	ExecutionTime  time.Duration
-	FileCount      int
+	OutputFile    string
+	ProjectString string
+	TokenEstimate string
+	ExecutionTime time.Duration
+	FileCount     int
 }
 
 // DefaultOptions returns sensible defaults for bundling
@@ -158,7 +158,7 @@ func Generate(opts Options) (*Result, error) {
 	}
 
 	// Create the project string
-	projectString := formatting.CreateProjectString(projectTree, fileContentMap, gitDiffMap)
+	projectString := formatting.CreateProjectString(opts.RootDir, projectTree, fileContentMap, gitDiffMap)
 
 	// Ensure output directory exists
 	outputDir := filepath.Dir(opts.OutputFile)
@@ -176,11 +176,11 @@ func Generate(opts Options) (*Result, error) {
 	elapsed := time.Since(start)
 
 	return &Result{
-		OutputFile:     opts.OutputFile,
-		ProjectString:  projectString,
-		TokenEstimate:  fmt.Sprintf("%d - %d tokens", len(projectString)/4, len(projectString)/3),
-		ExecutionTime:  elapsed,
-		FileCount:      len(filePaths),
+		OutputFile:    opts.OutputFile,
+		ProjectString: projectString,
+		TokenEstimate: fmt.Sprintf("%d - %d tokens", len(projectString)/4, len(projectString)/3),
+		ExecutionTime: elapsed,
+		FileCount:     len(filePaths),
 	}, nil
 }
 

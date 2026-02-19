@@ -54,27 +54,38 @@ func GeneratePathTree(paths []string) string {
 }
 
 // Creates a string representation of the project.
-func CreateProjectString(projectTree string, fileContentMap, gitDiffMap map[string]string) string {
+func CreateProjectString(rootDir, projectTree string, fileContentMap, gitDiffMap map[string]string) string {
 	var projectString strings.Builder
-	projectString.WriteString("Project Directory Structure:" + "\n")
+	projectString.WriteString("Project Directory Structure:\n")
 	projectString.WriteString(projectTree + "\n\n")
 
-	// Collect and sort the file paths lexicographically to make the function deterministic
+	// Collect and sort the file paths lexicographically
 	filePaths := make([]string, 0, len(fileContentMap))
 	for filePath := range fileContentMap {
-		filePaths = append(filePaths, filePath)
+		relPath := filePath
+		if rootDir != "" {
+			rel, err := filepath.Rel(rootDir, filePath)
+			if err == nil {
+				relPath = rel
+			}
+		}
+		filePaths = append(filePaths, relPath)
 	}
 	sort.Strings(filePaths)
 
-	for _, fileName := range filePaths {
-		fileContent := fileContentMap[fileName]
-		projectString.WriteString("File: " + "\n")
-		projectString.WriteString(fileName + "\n")
-		projectString.WriteString("Content: " + "\n")
+	for _, relFileName := range filePaths {
+		absFileName := relFileName
+		if rootDir != "" {
+			absFileName = filepath.Join(rootDir, relFileName)
+		}
+		fileContent := fileContentMap[absFileName]
+		projectString.WriteString("File: \n")
+		projectString.WriteString(relFileName + "\n")
+		projectString.WriteString("Content: \n")
 		projectString.WriteString(fileContent + "\n")
 
-		if gitDiff, ok := gitDiffMap[fileName]; ok {
-			projectString.WriteString("Git Diff: " + "\n")
+		if gitDiff, ok := gitDiffMap[relFileName]; ok {
+			projectString.WriteString("Git Diff: \n")
 			projectString.WriteString(gitDiff + "\n")
 		}
 
