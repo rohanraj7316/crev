@@ -104,11 +104,24 @@ func ReviewPR(ctx context.Context, cfg Config) (*Result, error) {
 
 	res.Verdict = ParseVerdict(reviewText)
 	commentBody := strings.TrimSpace(StripVerdictFromComment(reviewText))
-	commentToPost := commentBody + "\n\n" + CrevCommentSignature
+
+	summary, issueBlocks := ParseReviewBody(commentBody)
+	if summary == "" {
+		summary = commentBody
+	}
+	summaryComment := summary + "\n\n" + CrevCommentSignature
 
 	if !cfg.DryRun {
-		if err := cfg.GitClient.PostComment(ctx, commentToPost); err != nil {
-			return nil, fmt.Errorf("post comment: %w", err)
+		if err := cfg.GitClient.PostComment(ctx, summaryComment); err != nil {
+			return nil, fmt.Errorf("post summary comment: %w", err)
+		}
+		for _, block := range issueBlocks {
+			if strings.TrimSpace(block) == "" {
+				continue
+			}
+			if err := cfg.GitClient.PostComment(ctx, block); err != nil {
+				return nil, fmt.Errorf("post issue comment: %w", err)
+			}
 		}
 		if res.Verdict == VerdictApprove {
 			if err := cfg.GitClient.Approve(ctx); err != nil {
@@ -121,6 +134,10 @@ func ReviewPR(ctx context.Context, cfg Config) (*Result, error) {
 		}
 	}
 
-	res.Comment = commentToPost
+	// Result.Comment is the full review text (summary + issues) for logging
+	res.Comment = summaryComment
+	for _, block := range issueBlocks {
+		res.Comment += "\n\n---\n\n" + block
+	}
 	return res, nil
 }
