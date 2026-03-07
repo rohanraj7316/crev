@@ -62,3 +62,9 @@ dist/
 scripts/install_private.sh
 
 crev*
+
+.cursor/
+
+.jfrog/
+
+.vscode/

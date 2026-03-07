@@ -1,4 +1,4 @@
-package bitbucket_test
+package git_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/subosito/gotenv"
-	"github.com/vossenwout/crev/internal/bitbucket"
+	"github.com/vossenwout/crev/internal/git"
 )
 
 func Test_ParsePRURL(t *testing.T) {
@@ -47,7 +47,7 @@ func Test_ParsePRURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prInfo, err := bitbucket.ParsePRURL(tt.url)
+			prInfo, err := git.ParsePRURL(tt.url)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -76,7 +76,7 @@ func Test_GetPullRequestFromURL(t *testing.T) {
 	// Test with PR URL
 	prURL := "https://aslbitbucket.asldt.in/projects/BH/repos/crobat/pull-requests/50/overview"
 
-	git, err := bitbucket.NewGitBitbucketFromURL(prURL, username, password)
+	git, err := git.NewGitBitbucketFromURL(prURL, username, password)
 	assert.NoError(t, err)
 
 	// Test GetPullRequestDetails to get branch names
@@ -111,7 +111,7 @@ func Test_CloneRepository(t *testing.T) {
 
 	prURL := "https://aslbitbucket.asldt.in/projects/BHR/repos/rsrc-mst-security/pull-requests/30/overview"
 
-	git, err := bitbucket.NewGitBitbucketFromURL(prURL, username, password)
+	git, err := git.NewGitBitbucketFromURL(prURL, username, password)
 	assert.NoError(t, err)
 
 	// Create a temporary directory for cloning
@@ -142,4 +142,34 @@ func Test_CloneRepository(t *testing.T) {
 	assert.NotEmpty(t, entries, "Cloned directory should not be empty")
 
 	t.Logf("Cloned %d files/directories", len(entries))
+}
+
+// Test_ListOpenPullRequests requires BITBUCKET_USERNAME and BITBUCKET_PASSWORD in .env.
+func Test_ListOpenPullRequests(t *testing.T) {
+	err := gotenv.Load("../../.env")
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+	username := os.Getenv("BITBUCKET_USERNAME")
+	password := os.Getenv("BITBUCKET_PASSWORD")
+
+	assert.NotEmpty(t, username)
+	assert.NotEmpty(t, password)
+
+	prURL := "https://aslbitbucket.asldt.in/projects/BH/repos/crobat/pull-requests/63/overview"
+
+	g, err := git.NewGitBitbucketFromURL(prURL, username, password)
+	assert.NoError(t, err)
+
+	prs, err := g.ListOpenPullRequests(ctx)
+	assert.NoError(t, err)
+	assert.NotNil(t, prs)
+
+	for _, pr := range prs {
+		assert.Equal(t, "OPEN", pr.State, "PR %d should be open", pr.ID)
+		assert.NotZero(t, pr.ID)
+		assert.NotEmpty(t, pr.Title)
+	}
+
+	t.Logf("ListOpenPullRequests returned %d open PR(s)", len(prs))
 }

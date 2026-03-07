@@ -11,16 +11,23 @@ import (
 
 // Define a default template configuration
 var defaultConfig = []byte(`# Configuration for the crev tool
-# for more info see: https://crevcli.com/docs
 
-# specify your CREV API key (necessary for review command) ! this overwrites the value you specify in the environment variable
-# you can get one on: https://crevcli.com/api-key
-crev_api_key: # ex. csk_8e796a8f6fdb15f0902eee0d4138b9d5975e244e6cc61ef502feaf37af24c7cb
-# specify the prefixes of files and directories to ignore (by default common configuration files are ignored)
+# Bitbucket credentials (for crev review and crev review-all)
+bitbucket_username: # ex. your-username
+bitbucket_password: # ex. app password or token
+
+# Path to custom review prompt file (markdown)
+review_prompt: .crev-prompt.md
+
+# Include PR title and description in the AI review prompt
+include_pr_description: true
+
+# Optional: CREV API key if using API-based LLM instead of Gemini CLI
+crev_api_key:
+
+# Bundle command: prefixes and extensions to ignore/include
 ignore-pre: # ex. [tests, readme.md, scripts]
-# specify the extensions of files to ignore 
 ignore-ext: # ex. [.go, .py, .js]
-# specify the extensions of files to include 
 include-ext: # ex. [.go, .py, .js]
 `)
 
@@ -30,8 +37,9 @@ var initCmd = &cobra.Command{
 	Long: `Generates a default configuration file (.crev-config.yaml) in the current directory.
 
 The configuration file includes:
-- API key for accessing the Code AI Review service (required for the "review" command)
-- File and directory ignore patterns when generating the project overview
+- Bitbucket credentials (for crev review and crev review-all)
+- Path to custom review prompt file
+- File and directory ignore patterns for the bundle command
 - File extensions to include when generating the project overview
 
 You can modify this file as needed to suit your project's structure.

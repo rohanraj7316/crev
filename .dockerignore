@@ -1,0 +1,11 @@
+.git
+.env
+.env.local
+.vscode
+.idea
+*.test
+*.out
+dist/
+crev
+crev-project.txt
+*.md
